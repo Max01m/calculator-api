@@ -36,3 +36,9 @@ def test_expression_rejects_unsafe_code():
 def test_sqrt_negative():
     resp = client.post("/api/v1/sqrt", json={"a": -4})
     assert resp.status_code == 400
+
+
+def test_version_endpoint():
+    resp = client.get("/api/v1/version")
+    assert resp.status_code == 200
+    assert "version" in resp.json()

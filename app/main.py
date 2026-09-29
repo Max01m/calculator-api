@@ -1,5 +1,6 @@
 """
 API-калькулятор на FastAPI.
+
 Запуск локально:
     uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 """
@@ -7,6 +8,7 @@ API-калькулятор на FastAPI.
 import ast
 import math
 import operator
+import os
 import time
 from collections import deque
 from threading import Lock
@@ -22,7 +24,7 @@ app = FastAPI(
     title="Calculator API",
     description="Производительный API-калькулятор с поддержкой базовых операций "
                 "и вычисления произвольных выражений.",
-    version="1.0.0",
+    version=os.environ.get("APP_VERSION", "0.0.0-dev"),
 )
 
 # CORS - разрешаем обращения из браузера/других сервисов 
@@ -32,6 +34,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Версия приложения — задаётся при сборке образа (см. Dockerfile ARG/ENV APP_VERSION)
+# и автоматически бампится CI-пайплайном при каждом пуше (см.  Jenkinsfile).
+APP_VERSION = os.environ.get("APP_VERSION", "0.0.0-dev")
 
 MAX_HISTORY_SIZE = 100
 _history: deque = deque(maxlen=MAX_HISTORY_SIZE)
@@ -68,6 +74,11 @@ class CalculationResult(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     uptime_seconds: float
+
+
+class VersionResponse(BaseModel):
+    version: str
+    service: str = "calculator-api"
 
 
 # Вспомогательные функции
@@ -220,10 +231,16 @@ async def health():
     return HealthResponse(status="ok", uptime_seconds=time.time() - START_TIME)
 
 
+@app.get("/api/v1/version", response_model=VersionResponse, tags=["service"])
+async def version():
+    return VersionResponse(version=APP_VERSION)
+
+
 @app.get("/", tags=["service"])
 async def root():
     return {
         "service": "Calculator API",
+        "version": APP_VERSION,
         "docs": "/docs",
         "health": "/health",
     }
