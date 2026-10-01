@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# сборка зависимостей 
+#  сборка зависимостей 
 FROM python:3.12-slim AS builder
 
 WORKDIR /build
@@ -13,8 +13,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-#  рабочий образ (минимальный, без компиляторов) 
+# рабочий образ 
 FROM python:3.12-slim
+
+# Версия приложения передаётся CI-пайплайном при сборке:
+#   docker build --build-arg APP_VERSION=1.4.0 -t calculator-api:1.4.0 .
+ARG APP_VERSION=0.0.0-dev
+ENV APP_VERSION=${APP_VERSION}
+LABEL org.opencontainers.image.title="calculator-api" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.source="https://github.com/<org>/<repo>"
 
 # Непривилегированный пользователь для запуска приложения 
 RUN useradd --create-home --shell /bin/bash appuser
