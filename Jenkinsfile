@@ -32,7 +32,7 @@ pipeline {
     steps {
         sh """
             docker run --rm --volumes-from jenkins -w ${WORKSPACE} python:3.12-slim \
-                bash -c "pip install --no-cache-dir -r requirements.txt pytest httpx && pytest tests/ -v"
+                bash -c "pip install --no-cache-dir -r requirements.txt pytest httpx && python -m pytest tests/ -v"
         """
     }
 }
