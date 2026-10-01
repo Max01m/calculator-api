@@ -29,16 +29,15 @@ pipeline {
         }
 
         stage('Test') {
-    steps {
-        sh """
-            docker run --rm --volumes-from jenkins -w ${WORKSPACE} python:3.12-slim \
-                bash -c "pip install --no-cache-dir -r requirements.txt pytest httpx && python -m pytest tests/ -v"
-        """
-    }
-}
+            steps {
+                sh """
+                    docker run --rm --volumes-from jenkins -w ${WORKSPACE} python:3.12-slim \
+                        bash -c "pip install --no-cache-dir -r requirements.txt pytest httpx && python -m pytest tests/ -v"
+                """
+            }
+        }
 
         stage('Determine next version') {
-            when { branch 'main' }
             steps {
                 script {
                     sh 'chmod +x scripts/bump_version.sh'
@@ -52,7 +51,6 @@ pipeline {
         }
 
         stage('Commit & tag version') {
-            when { branch 'main' }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'git-push-credentials',
                                                    usernameVariable: 'GIT_USER',
@@ -72,7 +70,6 @@ pipeline {
         }
 
         stage('Build image') {
-            when { branch 'main' }
             steps {
                 sh """
                     docker build --build-arg APP_VERSION=${NEW_VERSION} \
@@ -85,7 +82,7 @@ pipeline {
 
     post {
         success {
-            echo "Пайплайн завершён успешно. Версия: ${env.NEW_VERSION ?: 'н/д (не main)'}. Локальный образ: calculator-api:${env.NEW_VERSION ?: 'latest'}"
+            echo "Пайплайн завершён успешно. Версия: ${env.NEW_VERSION ?: 'н/д'}. Локальный образ: calculator-api:${env.NEW_VERSION ?: 'latest'}"
         }
         failure {
             echo "Пайплайн завершился с ошибкой — версия НЕ обновлена, образ НЕ собран."
@@ -93,7 +90,7 @@ pipeline {
     }
 }
 
-// ------------------------------------------------------------------------
+
 // позже если появится реестр образов или сервер для деплоя, нужно добавить
 // такие стадии после 'Build image' (нужны доп. credentials
 // "docker-registry-creds" и "deploy-ssh-key"):
