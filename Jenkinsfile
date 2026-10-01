@@ -60,7 +60,7 @@ pipeline {
                         git config user.name "Jenkins CI"
                         git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@$(git remote get-url origin | sed -E 's#https?://##')
                         git add VERSION
-                        git commit -m "chore(release): bump version to ${NEW_VERSION} [skip ci]" || echo "Нет изменений"
+                        git commit -m "chore(release): bump version to ${NEW_VERSION} " || echo "Нет изменений"
                         git tag "v${NEW_VERSION}"
                         git push origin HEAD:main
                         git push origin "v${NEW_VERSION}"
