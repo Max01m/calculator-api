@@ -170,9 +170,7 @@ docker compose up -d --build
 4. **Commit & tag version** — обновляет `VERSION`, коммитит (`chore(release): bump version to X.Y.Z [skip ci]`) и ставит git-тег `vX.Y.Z`, пушит обратно в GitHub.
 5. **Build image** — собирает локальный Docker-образ: `docker build --build-arg APP_VERSION=X.Y.Z -t calculator-api:X.Y.Z -t calculator-api:latest .`
 
-Публикация образа в реестр и деплой на сервер не входят в пайплайн — нет своего реестра
-и сервера для этого проекта. Если понадобится позже, пример этих стадий есть 
-закомментированным в конце `Jenkinsfile`.
+
 
 Проверить, что образ собрался и завести его, уже запустив вручную:
 ```bash
@@ -192,12 +190,9 @@ curl http://localhost:8000/api/v1/version
 компонентов, бампает версию калькулятора (`patch`, префикс `fix(deps):`/`fix(docker):`)
 и публикует пересобранный образ.
 
-## Что нужно установить и настроить, чтобы Jenkinsfile заработал
 
-Ничего скачивать в сам проект не нужно — весь список ниже про инфраструктуру Jenkins,
-которая обычно разворачивается один раз на команду/сервер.
 
-### 1. Сам Jenkins-сервер
+###  Jenkins-сервер
 
 Нужен где-то работающий Jenkins. Самый быстрый способ — поднять его в Docker:
 
@@ -217,52 +212,32 @@ docker run -d --name jenkins \
 (смотрите в логах контейнера: `docker logs jenkins`) и предложит установить стандартный
 набор плагинов при первом входе.
 
-### 2. Docker Engine на агенте, где выполняется сборка
 
-Так как `Jenkinsfile` вызывает `docker build`/`docker push`, на машине-агенте должен быть
-установлен Docker Engine. Если Jenkins запущен в контейнере с примонтированным `docker.sock`
-(как в команде выше) — отдельно ничего ставить не нужно, он использует Docker хост-машины.
 
-### 3. Плагины Jenkins (ставятся один раз: *Manage Jenkins → Plugins*)
+###  Плагины Jenkins 
 
 | Плагин | Зачем нужен |
 |---|---|
-| **Pipeline** | выполнение `Jenkinsfile` (обычно уже входит в стандартный набор) |
+| **Pipeline** | выполнение `Jenkinsfile` |
 | **Git** | checkout репозитория |
 | **Credentials Binding** | подстановка логина/токена в `withCredentials` |
 
-### 4. Учётные данные (*Manage Jenkins → Credentials*) — под именем из `Jenkinsfile`
+.
 
-| ID credential | Тип | Зачем |
-|---|---|---|
-| `git-push-credentials` | Username with password (логин GitHub + Personal Access Token) | пуш обновлённого `VERSION` и тега обратно в репозиторий |
-
-Публикация образа в реестр и деплой на сервер в текущей версии `Jenkinsfile` не используются
-(нет своего реестра и сервера) — соответственно, `docker-registry-creds` и `deploy-ssh-key`
-заводить не нужно. Пример, как добавить эти стадии обратно, если реестр/сервер появятся —
-в комментарии в конце `Jenkinsfile`.
-
-### 5. Job в Jenkins
+###  Job в Jenkins
 
 Создайте **Pipeline** job (New Item → Pipeline) с источником "Pipeline script from SCM",
 укажите URL вашего GitHub-репозитория — Jenkins сам найдёт `Jenkinsfile` в корне проекта.
 
-### 6. Webhook на репозитории (чтобы пайплайн запускался автоматически на каждый push)
 
-В настройках GitHub-репозитория (Settings → Webhooks → Add webhook) добавьте webhook
-на `http://<адрес-jenkins>:8080/github-webhook/`. Это и реализует требование "автоматически
-при каждом пуше кода". Если Jenkins крутится локально (как сейчас), для доступа GitHub к
-вашему `localhost` понадобится туннель (например, `ngrok`) — либо для учебных целей можно
-обойтись ручным нажатием **Build Now** после каждого push.
 
-### 7. GitHub Personal Access Token для `git-push-credentials`
+###  GitHub Personal Access Token для `git-push-credentials`
 
 Создайте токен: GitHub → Settings → Developer settings → Personal access tokens →
 Tokens (classic) → Generate new token, с правом `repo`. В Jenkins добавьте Credential типа
 **Username with password**: username — ваш логин GitHub, password — сам токен.
 
-Больше ничего скачивать не требуется — само приложение (Python/FastAPI) не нужно ставить
-на хост Jenkins, оно целиком собирается и запускается внутри Docker-образа.
+
 
 ## Требования к производительности
 
